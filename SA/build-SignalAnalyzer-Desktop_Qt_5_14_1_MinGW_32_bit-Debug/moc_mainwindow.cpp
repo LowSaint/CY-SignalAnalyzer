@@ -10,6 +10,7 @@
 #include "../src/mainwindow.h"
 #include <QtCore/qbytearray.h>
 #include <QtCore/qmetatype.h>
+#include <QtCore/QList>
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'mainwindow.h' doesn't include <QObject>."
 #elif Q_MOC_OUTPUT_REVISION != 67
@@ -22,8 +23,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_MainWindow_t {
-    QByteArrayData data[10];
-    char stringdata0[150];
+    QByteArrayData data[12];
+    char stringdata0[182];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -41,13 +42,16 @@ QT_MOC_LITERAL(5, 89, 17), // "updatePacketCount"
 QT_MOC_LITERAL(6, 107, 5), // "count"
 QT_MOC_LITERAL(7, 113, 17), // "displayPacketData"
 QT_MOC_LITERAL(8, 131, 4), // "data"
-QT_MOC_LITERAL(9, 136, 13) // "updateUITimer"
+QT_MOC_LITERAL(9, 136, 22), // "displayPacketDataBatch"
+QT_MOC_LITERAL(10, 159, 8), // "dataList"
+QT_MOC_LITERAL(11, 168, 13) // "updateUITimer"
 
     },
     "MainWindow\0on_startButton_clicked\0\0"
     "on_networkInterfaceComboBox_currentIndexChanged\0"
     "index\0updatePacketCount\0count\0"
-    "displayPacketData\0data\0updateUITimer"
+    "displayPacketData\0data\0displayPacketDataBatch\0"
+    "dataList\0updateUITimer"
 };
 #undef QT_MOC_LITERAL
 
@@ -57,7 +61,7 @@ static const uint qt_meta_data_MainWindow[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-       5,   14, // methods
+       6,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -65,17 +69,19 @@ static const uint qt_meta_data_MainWindow[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags
-       1,    0,   39,    2, 0x08 /* Private */,
-       3,    1,   40,    2, 0x08 /* Private */,
-       5,    1,   43,    2, 0x08 /* Private */,
-       7,    1,   46,    2, 0x08 /* Private */,
-       9,    0,   49,    2, 0x08 /* Private */,
+       1,    0,   44,    2, 0x08 /* Private */,
+       3,    1,   45,    2, 0x08 /* Private */,
+       5,    1,   48,    2, 0x08 /* Private */,
+       7,    1,   51,    2, 0x08 /* Private */,
+       9,    1,   54,    2, 0x08 /* Private */,
+      11,    0,   57,    2, 0x08 /* Private */,
 
  // slots: parameters
     QMetaType::Void,
     QMetaType::Void, QMetaType::Int,    4,
     QMetaType::Void, QMetaType::Int,    6,
     QMetaType::Void, QMetaType::QByteArray,    8,
+    QMetaType::Void, QMetaType::QByteArrayList,   10,
     QMetaType::Void,
 
        0        // eod
@@ -91,7 +97,8 @@ void MainWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
         case 1: _t->on_networkInterfaceComboBox_currentIndexChanged((*reinterpret_cast< int(*)>(_a[1]))); break;
         case 2: _t->updatePacketCount((*reinterpret_cast< int(*)>(_a[1]))); break;
         case 3: _t->displayPacketData((*reinterpret_cast< const QByteArray(*)>(_a[1]))); break;
-        case 4: _t->updateUITimer(); break;
+        case 4: _t->displayPacketDataBatch((*reinterpret_cast< const QList<QByteArray>(*)>(_a[1]))); break;
+        case 5: _t->updateUITimer(); break;
         default: ;
         }
     }
@@ -126,13 +133,13 @@ int MainWindow::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 5)
+        if (_id < 6)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 5;
+        _id -= 6;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 5)
+        if (_id < 6)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 5;
+        _id -= 6;
     }
     return _id;
 }

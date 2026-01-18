@@ -7,10 +7,14 @@ TEMPLATE = app
 
 SOURCES += ../src/main.cpp \
     ../src/mainwindow.cpp \
-    ../src/udpreceiver.cpp
+    ../src/udpreceiver.cpp \
+    ../src/waveformplot.cpp \
+    ../src/waveformwindow.cpp
 
 HEADERS  += ../src/mainwindow.h \
-    ../src/udpreceiver.h
+    ../src/udpreceiver.h \
+    ../src/waveformplot.h \
+    ../src/waveformwindow.h
 
 FORMS    += ../src/mainwindow.ui
 
