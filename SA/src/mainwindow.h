@@ -6,7 +6,7 @@
 #include <QNetworkInterface>
 #include <QTimer>
 #include <QStringList>
-#include "udpreceiver.h"
+#include "workthread.h"
 #include "waveformwindow.h"
 
 namespace Ui {
@@ -31,7 +31,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    UdpReceiver *udpReceiver;
+    WorkThread *workThread;
     WaveformWindow *m_waveformWindow;
     QList<QNetworkInterface> networkInterfaces;
     QString selectedIpAddress;

@@ -8,12 +8,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     this->setWindowTitle("CY Signal Analyzer");
 
-    // 初始化UDP接收器
-    udpReceiver = new UdpReceiver(this);
+    // 初始化工作线程
+    workThread = new WorkThread(this);
 
     // 连接信号槽
-    connect(udpReceiver, &UdpReceiver::packetReceived, this, &MainWindow::updatePacketCount);
-    connect(udpReceiver, &UdpReceiver::packetDataBatch, this, &MainWindow::displayPacketDataBatch);
+    connect(workThread, &WorkThread::packetReceived, this, &MainWindow::updatePacketCount, Qt::QueuedConnection);
+    connect(workThread, &WorkThread::packetDataBatch, this, &MainWindow::displayPacketDataBatch, Qt::QueuedConnection);
 
     // 设置默认端口号
     ui->portLineEdit->setText("60002");
@@ -53,7 +53,7 @@ MainWindow::~MainWindow()
     // 清理波形窗口
     delete m_waveformWindow;
     
-    delete udpReceiver;
+    delete workThread;
     delete uiUpdateTimer;
     delete ui;
 }
@@ -70,32 +70,30 @@ void MainWindow::on_startButton_clicked()
         }
 
         // 开始接收UDP数据
-        if (udpReceiver->startReceiving(selectedIpAddress, port)) {
-            // 清空显示区域
-            ui->packetCountLabel->setText("已接收数据包数量: 0");
-            
-            // 重置计数和缓冲区
-            currentPacketCount = 0;
-            packetDataBuffer.clear();
-            lastFrameNumber = 0; // 重置帧号计数器
-            lastSampleTime = 0.0; // 重置时间计数器，确保时间轴从0开始
-            
-            // 清空所有波形绘图数据
-            m_waveformWindow->clearAllData();
-            
-            // 启动UI更新定时器
-            uiUpdateTimer->start();
-            
-            ui->startButton->setText(tr("停止接收"));
-            ui->networkInterfaceComboBox->setEnabled(false);
-            ui->portLineEdit->setEnabled(false);
-            ui->statusBar->showMessage("开始接收UDP数据", 3000);
-        } else {
-            ui->statusBar->showMessage("绑定端口失败，请检查端口是否被占用", 3000);
-        }
+        workThread->startWork(selectedIpAddress, port);
+        
+        // 清空显示区域
+        ui->packetCountLabel->setText("已接收数据包数量: 0");
+        
+        // 重置计数和缓冲区
+        currentPacketCount = 0;
+        packetDataBuffer.clear();
+        lastFrameNumber = 0; // 重置帧号计数器
+        lastSampleTime = 0.0; // 重置时间计数器，确保时间轴从0开始
+        
+        // 清空所有波形绘图数据
+        m_waveformWindow->clearAllData();
+        
+        // 启动UI更新定时器
+        uiUpdateTimer->start();
+        
+        ui->startButton->setText(tr("停止接收"));
+        ui->networkInterfaceComboBox->setEnabled(false);
+        ui->portLineEdit->setEnabled(false);
+        ui->statusBar->showMessage("开始接收UDP数据", 3000);
     } else {
         // 停止接收UDP数据
-        udpReceiver->stopReceiving();
+        workThread->stopWork();
         
         // 停止UI更新定时器
         uiUpdateTimer->stop();

@@ -1,0 +1,11 @@
+main.o
+mainwindow.o
+udpreceiver.o
+waveformplot.o
+waveformwindow.o
+workthread.o
+moc_mainwindow.o
+moc_udpreceiver.o
+moc_waveformplot.o
+moc_waveformwindow.o
+moc_workthread.o

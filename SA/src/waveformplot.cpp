@@ -41,6 +41,20 @@ WaveformPlot::WaveformPlot(int channelIndex, QWidget *parent)
     m_updateTimer->start();
     connect(m_updateTimer, &QTimer::timeout, this, &WaveformPlot::updateTimerTimeout);
     
+    // 初始化缩放模式
+    m_currentScaleMode = FreeScale;
+    
+    // 创建右键菜单
+    m_contextMenu = new QMenu(this);
+    QAction *freeScaleAction = m_contextMenu->addAction("自由缩放");
+    QAction *horizontalScaleAction = m_contextMenu->addAction("水平缩放");
+    QAction *verticalScaleAction = m_contextMenu->addAction("垂直缩放");
+    
+    // 连接菜单动作
+    connect(freeScaleAction, &QAction::triggered, this, [this]() { setScaleMode(FreeScale); });
+    connect(horizontalScaleAction, &QAction::triggered, this, [this]() { setScaleMode(HorizontalScale); });
+    connect(verticalScaleAction, &QAction::triggered, this, [this]() { setScaleMode(VerticalScale); });
+    
     // 设置窗口属性
     setMinimumSize(400, 200);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -53,38 +67,16 @@ WaveformPlot::~WaveformPlot()
 void WaveformPlot::addDataPoint(double x, double y)
 {
     if (!m_paused) {
+        // 添加数据点
         m_xData.append(x);
         m_yData.append(y);
         
         m_needsUpdate = true;
         m_dataPointsSinceLastUpdate++;
         
-        // 如果达到一个数据包的数量（64个采样点），就更新绘图范围和重绘
-        if (m_dataPointsSinceLastUpdate >= 64) {
-            // 保持只显示1秒的数据
-            if (m_xData.size() > 1) {
-                // 计算当前显示范围
-                double currentRange = m_xData.last() - m_xData.first();
-                
-                // 如果超过1秒，移除最旧的一个数据包（64个采样点），保持1秒窗口
-                if (currentRange > 1.0 && m_xData.size() >= 64) {
-                    // 移除最旧的64个采样点
-                    for (int i = 0; i < 64 && m_xData.size() > 0; ++i) {
-                        m_xData.removeFirst();
-                        m_yData.removeFirst();
-                    }
-                }
-                
-                // 更新X轴范围
-                m_xMin = m_xData.first();
-                m_xMax = m_xData.last();
-            } else {
-                // 第一个数据点
-                m_xMin = x;
-                m_xMax = x + 1.0; // 初始显示1秒的数据
-            }
-            
-            updatePlotLimits();
+        // 每50毫秒更新一次绘图，而不是每64个点
+        if (m_needsUpdate && m_dataPointsSinceLastUpdate >= 10) {
+            // 使用update()而不是repaint()，让Qt优化绘图
             update();
             m_needsUpdate = false;
             m_dataPointsSinceLastUpdate = 0;
@@ -125,6 +117,28 @@ void WaveformPlot::resume()
 bool WaveformPlot::isPaused() const
 {
     return m_paused;
+}
+
+void WaveformPlot::setScaleMode(ScaleMode mode)
+{
+    m_currentScaleMode = mode;
+    
+    // 可以添加不同缩放模式的视觉反馈
+    QString scaleModeText;
+    switch (mode) {
+    case FreeScale:
+        scaleModeText = "自由缩放";
+        break;
+    case HorizontalScale:
+        scaleModeText = "水平缩放";
+        break;
+    case VerticalScale:
+        scaleModeText = "垂直缩放";
+        break;
+    }
+    
+    // 可以在状态栏或工具提示中显示当前缩放模式
+    // QToolTip::showText(mapToGlobal(QPoint(0, 0)), QString("当前缩放模式: %1").arg(scaleModeText), this);
 }
 
 void WaveformPlot::togglePause()
@@ -202,8 +216,38 @@ void WaveformPlot::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
     
+    // 保持只显示1秒的数据
+    if (m_xData.size() > 1) {
+        // 计算当前显示范围
+        double currentRange = m_xData.last() - m_xData.first();
+        
+        // 如果超过1秒，移除最旧的数据点，保持1秒窗口
+        if (currentRange > 1.0) {
+            // 计算需要移除的数据点数量
+            double removeTime = currentRange - 1.0;
+            int removeCount = static_cast<int>(removeTime / (m_xData[1] - m_xData[0]));
+            
+            // 移除多余的数据点
+            for (int i = 0; i < removeCount && m_xData.size() > 1; ++i) {
+                m_xData.removeFirst();
+                m_yData.removeFirst();
+            }
+        }
+        
+        // 更新X轴范围
+        m_xMin = m_xData.first();
+        m_xMax = m_xData.last();
+    } else if (!m_xData.isEmpty()) {
+        // 只有一个数据点
+        m_xMin = m_xData.first();
+        m_xMax = m_xData.first() + 1.0; // 初始显示1秒的数据
+    }
+    
+    // 更新Y轴范围
+    updatePlotLimits();
+    
     QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setRenderHint(QPainter::Antialiasing, false); // 关闭抗锯齿以提高性能
     
     // 更新绘图区域，为下方的按钮留出空间
     int buttonHeight = m_pauseButton->height();
@@ -254,14 +298,27 @@ void WaveformPlot::paintEvent(QPaintEvent *event)
     
     // 绘制波形
     if (m_xData.size() > 1 && m_yData.size() > 1) {
-        painter.setPen(QPen(Qt::blue, 1.5));
+        painter.setPen(QPen(Qt::blue, 1.0)); // 细线以提高性能
         
-        for (int i = 0; i < m_xData.size() - 1; ++i) {
+        // 只绘制可见区域内的波形
+        int startIdx = 0;
+        int endIdx = m_xData.size() - 1;
+        
+        // 找到可见区域的起始和结束索引
+        while (startIdx < endIdx && m_xData[startIdx] < m_xMin) {
+            startIdx++;
+        }
+        while (endIdx > startIdx && m_xData[endIdx] > m_xMax) {
+            endIdx--;
+        }
+        
+        // 绘制可见的波形段
+        for (int i = startIdx; i < endIdx; ++i) {
             QPointF startPoint = dataToScreen(QPointF(m_xData[i], m_yData[i]));
             QPointF endPoint = dataToScreen(QPointF(m_xData[i + 1], m_yData[i + 1]));
             
             // 检查点是否在绘图区域内
-            if (m_plotRect.contains(startPoint.toPoint()) || m_plotRect.contains(endPoint.toPoint())) {
+            if (m_plotRect.intersects(QRect(startPoint.toPoint(), endPoint.toPoint()))) {
                 painter.drawLine(startPoint, endPoint);
             }
         }
@@ -345,6 +402,9 @@ void WaveformPlot::mousePressEvent(QMouseEvent *event)
         m_selectionStart = event->pos();
         m_selectionRect = QRect();
         setCursor(Qt::CrossCursor);
+    } else if (event->button() == Qt::RightButton && m_plotRect.contains(event->pos())) {
+        // 显示上下文菜单
+        m_contextMenu->exec(event->globalPos());
     }
 }
 
@@ -361,11 +421,26 @@ void WaveformPlot::mouseReleaseEvent(QMouseEvent *event)
             QPointF topLeft = screenToData(m_selectionRect.topLeft());
             QPointF bottomRight = screenToData(m_selectionRect.bottomRight());
             
-            // 更新绘图范围
-            m_xMin = topLeft.x();
-            m_xMax = bottomRight.x();
-            m_yMin = topLeft.y();
-            m_yMax = bottomRight.y();
+            // 根据当前缩放模式更新绘图范围
+            switch (m_currentScaleMode) {
+            case FreeScale:
+                // 自由缩放：同时更新X和Y轴的范围
+                m_xMin = topLeft.x();
+                m_xMax = bottomRight.x();
+                m_yMin = topLeft.y();
+                m_yMax = bottomRight.y();
+                break;
+            case HorizontalScale:
+                // 水平缩放：只更新X轴的范围，保持Y轴范围不变
+                m_xMin = topLeft.x();
+                m_xMax = bottomRight.x();
+                break;
+            case VerticalScale:
+                // 垂直缩放：只更新Y轴的范围，保持X轴范围不变
+                m_yMin = topLeft.y();
+                m_yMax = bottomRight.y();
+                break;
+            }
             
             // 重置缩放和平移
             m_xScaleFactor = 1.0;

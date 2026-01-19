@@ -6,10 +6,11 @@
 #include <QVBoxLayout>
 #include <QVector>
 #include <QTimer>
-#include <QVector>
 #include <QPainter>
 #include <QMouseEvent>
 #include <QToolTip>
+#include <QMenu>
+#include <QAction>
 
 class WaveformPlot : public QWidget
 {
@@ -18,6 +19,13 @@ class WaveformPlot : public QWidget
 public:
     explicit WaveformPlot(int channelIndex, QWidget *parent = nullptr);
     ~WaveformPlot();
+    
+    // 缩放模式枚举
+    enum ScaleMode {
+        FreeScale,     // 自由缩放（同时缩放X和Y轴）
+        HorizontalScale, // 仅水平缩放（X轴）
+        VerticalScale    // 仅垂直缩放（Y轴）
+    };
 
     void addDataPoint(double x, double y);
     void clearData();
@@ -25,6 +33,7 @@ public:
     void resume();
     bool isPaused() const;
     void setTimeWindow(double timeWindow); // 设置时间窗口大小
+    void setScaleMode(ScaleMode mode); // 设置缩放模式
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -56,6 +65,8 @@ private:
     double m_yScaleFactor; // Y轴缩放因子
     double m_translateX;
     double m_translateY;
+    ScaleMode m_currentScaleMode; // 当前缩放模式
+    QMenu *m_contextMenu; // 右键菜单
     
     // 绘图区域相关
     QRect m_plotRect;

@@ -22,6 +22,12 @@ WaveformWindow::WaveformWindow(QWidget *parent) : QMainWindow(parent)
         m_plotLayout->addWidget(plot, row, col);
     }
     
+    // 设置第1个通道默认打开，其他7个默认暂停
+    m_waveformPlots[0]->resume();
+    for (int i = 1; i < NUM_CHANNELS; ++i) {
+        m_waveformPlots[i]->pause();
+    }
+    
     // 设置窗口大小和最小尺寸
     this->resize(1200, 800);
     this->setMinimumSize(800, 600);
